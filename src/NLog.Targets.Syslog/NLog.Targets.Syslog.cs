@@ -251,6 +251,11 @@ namespace NLog.Targets
         /// Sets the syslog facility name to send messages as (for example, local0 or local7)
         /// </summary>
         public SyslogFacility Facility { get; set; }
+
+		/// <summary>
+		/// Sets the encoding to use for the message content
+		/// </summary>
+		public string Encoding { get; set; }
         #endregion
 
         /// <summary>
@@ -264,7 +269,9 @@ namespace NLog.Targets
             // Set the current Locale to "en-US" for proper date formatting
             Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
 
-            byte[] msg = buildSyslogMessage(Facility, getSyslogSeverity(logEvent.Level), DateTime.Now, Sender, Layout.Render(logEvent));
+			System.Text.Encoding encoding = string.IsNullOrEmpty(Encoding) ? System.Text.Encoding.ASCII : System.Text.Encoding.GetEncoding(Encoding);
+
+			byte[] msg = buildSyslogMessage(Facility, getSyslogSeverity(logEvent.Level), DateTime.Now, Sender, Layout.Render(logEvent), encoding);
             sendMessage(SyslogServer, Port, msg);
 
             // Restore the original culture
@@ -332,7 +339,7 @@ namespace NLog.Targets
         /// <param name="sender">Name of the subsystem sending the message</param>
         /// <param name="body">Message text</param>
         /// <returns>Byte array containing formatted syslog message</returns>
-        private static byte[] buildSyslogMessage(SyslogFacility facility, SyslogSeverity priority, DateTime time, string sender, string body)
+		private static byte[] buildSyslogMessage(SyslogFacility facility, SyslogSeverity priority, DateTime time, string sender, string body, System.Text.Encoding encoding)
         {
 
             // Get sender machine name
@@ -346,7 +353,7 @@ namespace NLog.Targets
             sender = sender + ": ";
 
             string[] strParams = { pri, timeToString, machine, sender, body };
-            return Encoding.ASCII.GetBytes(string.Concat(strParams));
+			return encoding.GetBytes(string.Concat(strParams));
         }
     }
 }
